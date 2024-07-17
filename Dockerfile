@@ -14,7 +14,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY . .
 
 # Specify the command to run on container start
-CMD ["python", "app.py"]
+CMD ["python", "main.py"]
 
 # Expose port 8000 (if you are using Flask, for example)
 EXPOSE 8000
