@@ -8,7 +8,10 @@ WORKDIR /app
 COPY requirements.txt .
 
 # Install the required packages
-RUN pip install --no-cache-dir -r requirements.txt
+RUN apt-get update && \
+    apt-get install -y ffmpeg && \
+    rm -rf /var/lib/apt/lists/* && \
+    pip install --no-cache-dir -r requirements.txt
 
 # Copy the rest of the application code into the container
 COPY . .
@@ -16,5 +19,5 @@ COPY . .
 # Specify the command to run on container start
 CMD ["python", "main.py"]
 
-# Expose port 8000 (if you are using Flask, for example)
+# Expose port 8000 (if applicable, otherwise remove this line)
 EXPOSE 8000
