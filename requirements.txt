@@ -1,0 +1,4 @@
+aiohttp
+aiocron
+ffmpeg
+python-telegram-bot
