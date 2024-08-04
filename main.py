@@ -4,6 +4,7 @@ import logging
 from datetime import datetime, timedelta
 import asyncio
 import aiohttp
+import psutil
 from telegram import Update, Bot
 from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, filters, CallbackContext
 import aiocron
@@ -17,7 +18,7 @@ def home():
     return "Bot is running!"
 
 def run():
-    app.run(host='0.0.0.0', port=8080)
+    app.run(host='0.0.0.0', port=8000)
 
 def keep_alive():
     t = Thread(target=run)
@@ -51,7 +52,9 @@ async def start(update: Update, context: CallbackContext):
         'Use /schedule <name> <HH:MMAM/PM> <duration in minutes> <url> to schedule a recording.\n'
         'Use /reschedule <name> <HH:MMAM/PM> <duration in minutes> <url> to reschedule a recording.\n'
         'Use /list_schedules to list all scheduled recordings.\n'
-        'Use /cancel_schedule <name> to cancel a scheduled recording.'
+        'Use /cancel_schedule <name> to cancel a scheduled recording.\n'
+        'Use /status to check storage, RAM, and CPU usage.\n'
+        'Use /delete to delete all stored videos.'
     )
 
 async def set_duration(update: Update, context: CallbackContext):
@@ -253,6 +256,39 @@ async def reschedule(update: Update, context: CallbackContext):
         logger.error(f"Error rescheduling recording: {e}")
         await update.message.reply_text("Failed to reschedule recording. Please try again.")
 
+async def status(update: Update, context: CallbackContext):
+    # Get storage, RAM, and CPU details
+    total, used, free = psutil.disk_usage(DOWNLOAD_DIR)
+    memory = psutil.virtual_memory()
+    cpu_usage = psutil.cpu_percent(interval=1)
+
+    response = (
+        f"Storage:\n"
+        f"Total: {total // (1024 ** 3)} GB\n"
+        f"Used: {used // (1024 ** 3)} GB\n"
+        f"Free: {free // (1024 ** 3)} GB\n\n"
+        f"RAM:\n"
+        f"Total: {memory.total // (1024 ** 2)} MB\n"
+        f"Available: {memory.available // (1024 ** 2)} MB\n"
+        f"Used: {memory.used // (1024 ** 2)} MB\n"
+        f"Percentage: {memory.percent}%\n\n"
+        f"CPU Usage: {cpu_usage}%"
+    )
+
+    await update.message.reply_text(response)
+
+async def delete(update: Update, context: CallbackContext):
+    # Delete all videos in the download directory
+    try:
+        for filename in os.listdir(DOWNLOAD_DIR):
+            file_path = os.path.join(DOWNLOAD_DIR, filename)
+            if os.path.isfile(file_path):
+                os.remove(file_path)
+        await update.message.reply_text("All videos have been deleted.")
+    except Exception as e:
+        logger.error(f"Error deleting files: {e}")
+        await update.message.reply_text("Failed to delete files. Please try again.")
+
 def main():
     application = ApplicationBuilder().token(bot_token).build()
 
@@ -262,9 +298,12 @@ def main():
     application.add_handler(CommandHandler('reschedule', reschedule))
     application.add_handler(CommandHandler('list_schedules', list_schedules))
     application.add_handler(CommandHandler('cancel_schedule', cancel_schedule))
+    application.add_handler(CommandHandler('status', status))
+    application.add_handler(CommandHandler('delete', delete))
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, record_stream))
 
     application.run_polling()
 
 if __name__ == '__main__':
+    keep_alive()
     main()
