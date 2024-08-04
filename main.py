@@ -258,7 +258,7 @@ async def reschedule(update: Update, context: CallbackContext):
 
 async def status(update: Update, context: CallbackContext):
     # Get storage, RAM, and CPU details
-    total, used, free = psutil.disk_usage(DOWNLOAD_DIR)
+    total, used, free, percent = psutil.disk_usage(DOWNLOAD_DIR)  # Add 'percent' to the unpacking
     memory = psutil.virtual_memory()
     cpu_usage = psutil.cpu_percent(interval=1)
 
@@ -266,7 +266,8 @@ async def status(update: Update, context: CallbackContext):
         f"Storage:\n"
         f"Total: {total // (1024 ** 3)} GB\n"
         f"Used: {used // (1024 ** 3)} GB\n"
-        f"Free: {free // (1024 ** 3)} GB\n\n"
+        f"Free: {free // (1024 ** 3)} GB\n"
+        f"Percentage: {percent}%\n\n"  # Include percentage
         f"RAM:\n"
         f"Total: {memory.total // (1024 ** 2)} MB\n"
         f"Available: {memory.available // (1024 ** 2)} MB\n"
