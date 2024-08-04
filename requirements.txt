@@ -4,3 +4,4 @@ aiocron
 ffmpeg
 python-telegram-bot
 Flask
+psutil
