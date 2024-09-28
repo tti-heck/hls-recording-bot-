@@ -20,6 +20,17 @@ def send_telegram_message(message):
     data = {'chat_id': CHAT_ID, 'text': message}
     requests.post(url, data=data)
 
+# Function to send recoadings.txt to Telegram as a document
+def send_telegram_document(file_path):
+    files = {'document': open(file_path, 'rb')}
+    url = f'https://api.telegram.org/bot{BOT_TOKEN}/sendDocument?chat_id={CHAT_ID}'
+    response = requests.post(url, files=files)
+    
+    if response.status_code == 200:
+        print("Log file sent to Telegram successfully!")
+    else:
+        print("Failed to send log file to Telegram.")
+
 # Route to show logs in terminal-like format
 @app.route('/')
 def show_logs():
@@ -37,17 +48,11 @@ def show_logs():
 def download_logs():
     return send_file(LOG_FILE_PATH, as_attachment=True)
 
-# Function to send recoadings.txt to Telegram
+# Route to manually send the log file to Telegram
 @app.route('/record')
 def send_recordings():
-    files = {'document': open(LOG_FILE_PATH, 'rb')}
-    url = f'https://api.telegram.org/bot{BOT_TOKEN}/sendDocument?chat_id={CHAT_ID}'
-    response = requests.post(url, files=files)
-    
-    if response.status_code == 200:
-        return "recoadings.txt sent to Telegram successfully!"
-    else:
-        return "Failed to send recoadings.txt."
+    send_telegram_document(LOG_FILE_PATH)
+    return "Log file sent to Telegram."
 
 # Function to upload to PlayerX
 def upload_to_playerx(file_path, timing):
@@ -67,6 +72,9 @@ def upload_to_playerx(file_path, timing):
                 video_url = response_json.get('slug')
                 log_file.write(f"{datetime.now()} - Success: {video_url}\n")
                 print(f"Video uploaded successfully: {video_url}")
+                
+                # Send the updated log to Telegram
+                send_telegram_document(LOG_FILE_PATH)
             else:
                 log_file.write(f"{datetime.now()} - Error: Unable to upload file for timing {timing}. Response: {response_json}\n")
                 print(f"Error during upload for timing {timing}")
@@ -105,6 +113,6 @@ def record_and_upload():
         time.sleep(1)
 
 if __name__ == "__main__":
-    threading.Thread(target=record_and_upload).start()
-    app.run(debug=True)
-                
+    threading.Thread(target=record_and_upload).start()  # Start the recording process in a separate thread
+    app.run(debug=True)  # Run the Flask app
+    
