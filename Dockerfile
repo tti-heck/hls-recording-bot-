@@ -19,5 +19,3 @@ COPY . .
 # Specify the command to run on container start
 CMD ["python", "main.py"]
 
-# Expose port 8000 (if applicable, otherwise remove this line)
-EXPOSE 8000
